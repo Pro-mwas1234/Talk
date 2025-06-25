@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CodeWave Hustle Chat Hub</title>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="chat.css">
+</head>
+<body>
+    <div class="chat-container">
+        <header class="app-header">
+            <h1>CodeWave Hustle Chat Hub</h1>
+        </header>
+        
+        <div class="messages-container" id="messagesContainer">
+            <!-- Messages will appear here -->
+        </div>
+        
+        <div class="input-container">
+            <button id="attachButton" class="icon-button">
+                <i class="fas fa-paperclip"></i>
+            </button>
+            <input type="text" id="messageInput" placeholder="Type a message" autocomplete="off">
+            <button id="sendButton" class="icon-button" disabled>
+                <i class="fas fa-paper-plane"></i>
+            </button>
+            <input type="file" id="fileInput" accept="image/*" style="display: none;">
+        </div>
+        
+        <div id="typingIndicator" class="typing-indicator"></div>
+    </div>
+
+    <!-- Name Modal -->
+    <div id="nameModal" class="modal">
+        <div class="modal-content">
+            <h3>Welcome to CodeWave Chat</h3>
+            <p>Please enter your name to join:</p>
+            <input type="text" id="userNameInput" placeholder="Your name" autofocus>
+            <button id="submitNameBtn" class="primary-btn">Join Chat</button>
+        </div>
+    </div>
+
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+    <script src="chat.js"></script>
+</body>
+</html>
