@@ -4,7 +4,7 @@ const firebaseConfig = {
     authDomain: "chat-d7eb8.firebaseapp.com",
     databaseURL: "https://chat-d7eb8-default-rtdb.firebaseio.com",
     projectId: "chat-d7eb8",
-    storageBucket: "chat-d7eb8.firebasestorage.app",
+    storageBucket: "chat-d7eb8.appspot.com",
     messagingSenderId: "963082833966",
     measurementId: "G-60HP09HPSM"
 };
@@ -22,7 +22,10 @@ const elements = {
     typingIndicator: document.getElementById('typingIndicator'),
     nameModal: document.getElementById('nameModal'),
     userNameInput: document.getElementById('userNameInput'),
-    submitNameBtn: document.getElementById('submitNameBtn')
+    submitNameBtn: document.getElementById('submitNameBtn'),
+    startRecording: document.getElementById('startRecording'),
+    stopRecording: document.getElementById('stopRecording'),
+    recordingStatus: document.getElementById('recordingStatus')
 };
 
 // App state
@@ -35,6 +38,10 @@ let lastTypingTime = 0;
 let expiryTimer = null;
 const MESSAGE_EXPIRY_MINUTES = 30;
 
+// Voice recording variables
+let mediaRecorder;
+let audioChunks = [];
+
 // Firebase references
 const messagesRef = database.ref('messages');
 const typingRef = database.ref('typing');
@@ -44,6 +51,12 @@ const usersRef = database.ref('users');
 function init() {
     showNameModal();
     setupEventListeners();
+    
+    // Check for MediaRecorder support
+    if (!window.MediaRecorder) {
+        elements.startRecording.style.display = 'none';
+        console.warn("Voice recording not supported in this browser");
+    }
 }
 
 // Show name modal
@@ -82,6 +95,10 @@ function setupEventListeners() {
     // File attachment
     elements.attachButton.addEventListener('click', () => elements.fileInput.click());
     elements.fileInput.addEventListener('change', handleFileUpload);
+    
+    // Voice recording
+    elements.startRecording.addEventListener('click', startRecording);
+    elements.stopRecording.addEventListener('click', stopRecording);
 }
 
 // Handle name submission
@@ -95,11 +112,18 @@ function handleNameSubmit() {
         // Add user to online list
         usersRef.child(currentUser.id).set({
             name: userName,
-            joinedAt: firebase.database.ServerValue.TIMESTAMP
+            joinedAt: firebase.database.ServerValue.TIMESTAMP,
+            isOnline: true
+        }).then(() => {
+            // Setup disconnect handler
+            usersRef.child(currentUser.id).onDisconnect().update({
+                isOnline: false,
+                lastSeen: firebase.database.ServerValue.TIMESTAMP
+            });
         });
         
         // Send join notification
-        sendSystemMessage(`${userName} joined the chat`);
+        sendSystemMessage(`${userName} joined the chat`, 'join');
         loadMessages();
     }
 }
@@ -109,8 +133,7 @@ function sendMessage() {
     const messageText = elements.messageInput.value.trim();
     if (messageText) {
         const timestamp = Date.now();
-        const newMessageRef = messagesRef.push();
-        newMessageRef.set({
+        messagesRef.push().set({
             text: messageText,
             senderId: currentUser.id,
             senderName: currentUser.name,
@@ -133,8 +156,7 @@ function handleFileUpload(e) {
         reader.onload = (event) => {
             const imageUrl = event.target.result;
             const timestamp = Date.now();
-            const newMessageRef = messagesRef.push();
-            newMessageRef.set({
+            messagesRef.push().set({
                 imageUrl: imageUrl,
                 senderId: currentUser.id,
                 senderName: currentUser.name,
@@ -148,6 +170,66 @@ function handleFileUpload(e) {
     e.target.value = '';
 }
 
+// Voice recording functions
+function startRecording() {
+    navigator.mediaDevices.getUserMedia({ audio: true })
+        .then(stream => {
+            mediaRecorder = new MediaRecorder(stream);
+            audioChunks = [];
+            
+            mediaRecorder.ondataavailable = e => {
+                if (e.data.size > 0) audioChunks.push(e.data);
+            };
+            
+            mediaRecorder.onstop = processRecording;
+            mediaRecorder.start(100); // Collect data every 100ms
+            
+            // Update UI
+            elements.startRecording.style.display = 'none';
+            elements.stopRecording.style.display = 'block';
+            elements.recordingStatus.style.display = 'block';
+        })
+        .catch(err => {
+            console.error("Recording failed:", err);
+            alert("Microphone access required for voice messages");
+        });
+}
+
+function stopRecording() {
+    if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+        mediaRecorder.stop();
+        mediaRecorder.stream.getTracks().forEach(track => track.stop());
+    }
+}
+
+function processRecording() {
+    const audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
+    const reader = new FileReader();
+    
+    reader.onload = () => {
+        const base64Audio = reader.result; // Full data URL
+        const duration = Math.round(audioBlob.size / 1000); // Approximate duration
+        
+        messagesRef.push().set({
+            type: 'voice',
+            audioData: base64Audio,
+            duration: duration,
+            senderId: currentUser.id,
+            senderName: currentUser.name,
+            timestamp: Date.now(),
+            expiry: Date.now() + (MESSAGE_EXPIRY_MINUTES * 60 * 1000)
+        });
+        
+        // Reset UI
+        elements.startRecording.style.display = 'block';
+        elements.stopRecording.style.display = 'none';
+        elements.recordingStatus.style.display = 'none';
+        audioChunks = [];
+    };
+    
+    reader.readAsDataURL(audioBlob);
+}
+
 // Update typing status
 function updateTyping(typing) {
     if (typing !== isTyping) {
@@ -159,15 +241,13 @@ function updateTyping(typing) {
 
 // Load messages with expiry check
 function loadMessages() {
-    // Clear any existing expiry timer
     clearTimeout(expiryTimer);
     
-    messagesRef.on('child_added', (snapshot) => {
+    messagesRef.orderByChild('timestamp').on('child_added', (snapshot) => {
         const message = snapshot.val();
         const isExpired = isMessageExpired(message);
         displayMessage(message, snapshot.key, isExpired);
         
-        // Set expiry timer if not already set
         if (!expiryTimer && !isExpired) {
             setExpiryTimer(message.timestamp);
         }
@@ -175,29 +255,30 @@ function loadMessages() {
         scrollToBottom();
     });
 
-    // Listen for typing indicators
+    // Typing indicators
     typingRef.on('value', (snapshot) => {
         const typingData = snapshot.val() || {};
         const typingUsers = Object.values(typingData).filter(name => name !== currentUser.name);
         
         if (typingUsers.length > 0) {
             elements.typingIndicator.textContent = `${typingUsers.join(', ')} ${typingUsers.length > 1 ? 'are' : 'is'} typing...`;
+            elements.typingIndicator.style.display = 'block';
         } else {
-            elements.typingIndicator.textContent = '';
+            elements.typingIndicator.style.display = 'none';
         }
     });
 
-    // Listen for user joins/leaves
-    usersRef.on('child_added', (snapshot) => {
+    // User presence
+    usersRef.orderByChild('isOnline').equalTo(true).on('child_added', (snapshot) => {
         if (snapshot.key !== currentUser.id) {
             const user = snapshot.val();
-            sendSystemMessage(`${user.name} joined the chat`);
+            sendSystemMessage(`${user.name} is online`, 'join');
         }
     });
 
-    usersRef.on('child_removed', (snapshot) => {
+    usersRef.orderByChild('isOnline').equalTo(false).on('child_changed', (snapshot) => {
         const user = snapshot.val();
-        sendSystemMessage(`${user.name} left the chat`);
+        sendSystemMessage(`${user.name} left the chat`, 'leave');
     });
 }
 
@@ -233,102 +314,78 @@ function cleanExpiredMessages() {
             }
         });
         
-        // Show expiry notice
         sendSystemMessage('Old messages have been cleared');
-        
-        // Reset timer for next expiry
         expiryTimer = null;
     });
 }
 
 // Display message with expiry state
 function displayMessage(message, messageId, isExpired = false) {
+    if (message.deleted || isExpired) return;
+    
     const messageElement = document.createElement('div');
     let messageContent = '';
     
-    const date = new Date(message.timestamp);
-    const timeString = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-    
-    if (message.type === 'system') {
-        messageElement.className = 'message system';
-        messageContent = message.text;
-    } else {
-        const isCurrentUser = message.senderId === currentUser.id;
-        messageElement.className = `message ${isCurrentUser ? 'sent' : 'received'} ${isExpired ? 'message-expired' : ''}`;
-        
-        if (message.type === 'image') {
-            messageContent = `
-                <img src="${message.imageUrl}" class="message-image" alt="Sent image">
-                <span class="timestamp">${timeString}</span>
-            `;
-        } else {
-            messageContent = `
-                <div class="message-text">${escapeHtml(message.text)}</div>
-                <span class="timestamp">${timeString} • ${message.senderName}</span>
-            `;
-        }
-        
-        if (isCurrentUser && !isExpired) {
-            messageContent += `
-                <div class="message-actions">
-                    <button class="delete-btn" data-message-id="${messageId}">
-                        <i class="fas fa-trash"></i>
-                    </button>
-                </div>
-            `;
-        }
+    const timeString = new Date(message.timestamp).toLocaleTimeString([], 
+        { hour: '2-digit', minute: '2-digit' });
+
+    if (message.type === 'voice') {
+        messageElement.className = `message ${message.senderId === currentUser.id ? 'sent' : 'received'}`;
+        messageContent = `
+            <audio controls src="${message.audioData}"></audio>
+            <span class="timestamp">${timeString} • ${message.senderName}</span>
+            <span class="voice-duration">${message.duration}s</span>
+        `;
+    } 
+    else if (message.type === 'image') {
+        messageElement.className = `message ${message.senderId === currentUser.id ? 'sent' : 'received'}`;
+        messageContent = `
+            <img src="${message.imageUrl}" class="message-image" alt="Sent image">
+            <span class="timestamp">${timeString} • ${message.senderName}</span>
+        `;
     }
-    
+    else if (message.senderId) {
+        messageElement.className = `message ${message.senderId === currentUser.id ? 'sent' : 'received'}`;
+        messageContent = `
+            <div class="message-text">${escapeHtml(message.text)}</div>
+            <span class="timestamp">${timeString} • ${message.senderName}</span>
+        `;
+    } 
+    else {
+        messageElement.className = `message system ${message.type || ''}`;
+        messageContent = message.text;
+    }
+
+    // Add delete button for user's non-expired messages
+    if (!isExpired && message.senderId === currentUser.id && message.type !== 'system') {
+        messageContent += `
+            <div class="message-actions">
+                <button class="delete-btn" data-message-id="${messageId}">
+                    <i class="fas fa-trash"></i>
+                </button>
+            </div>
+        `;
+    }
+
     messageElement.innerHTML = messageContent;
     elements.messagesContainer.appendChild(messageElement);
     
-    // Add delete event listener if not expired
-    if (!isExpired) {
-        const deleteBtn = messageElement.querySelector('.delete-btn');
-        if (deleteBtn) {
-            deleteBtn.addEventListener('click', () => deleteMessage(deleteBtn.dataset.messageId));
-        }
+    // Add delete listener if applicable
+    const deleteBtn = messageElement.querySelector('.delete-btn');
+    if (deleteBtn) {
+        deleteBtn.addEventListener('click', () => deleteMessage(deleteBtn.dataset.messageId));
     }
+    
+    scrollToBottom();
 }
 
 // Send system message
-function sendSystemMessage(text) {
-    messagesRef.push().set({
-        text: text,
-        timestamp: firebase.database.ServerValue.TIMESTAMP,
-        type: 'system'
-    });
-}
-
-// Voice recording variables (keep these)
-let mediaRecorder;
-let audioChunks = [];
-
-// Modified processRecording()
-function processRecording() {
-  const audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
-  const reader = new FileReader();
-  
-  reader.onload = function() {
-    const base64Audio = reader.result;
-    const duration = Math.round(audioBlob.size / 1000); // Rough duration estimate
-    
-    messagesRef.push().set({
-      type: 'voice',
-      audioData: base64Audio,
-      duration: duration,
-      senderId: currentUser.id,
-      senderName: currentUser.name,
-      timestamp: Date.now()
-    });
-    
-    // Reset UI
-    elements.startRecording.style.display = 'block';
-    elements.stopRecording.style.display = 'none';
-    elements.recordingStatus.style.display = 'none';
-  };
-  
-  reader.readAsDataURL(audioBlob);
+function sendSystemMessage(text, type = 'system') {
+    const messageElement = document.createElement('div');
+    messageElement.className = `message system ${type}`;
+    messageElement.textContent = text;
+    elements.messagesContainer.appendChild(messageElement);
+    scrollToBottom();
 }
 
 // Delete message
@@ -357,8 +414,10 @@ function escapeHtml(unsafe) {
 
 // Handle beforeunload
 window.addEventListener('beforeunload', () => {
-    usersRef.child(currentUser.id).remove();
-    sendSystemMessage(`${currentUser.name} left the chat`);
+    usersRef.child(currentUser.id).update({
+        isOnline: false,
+        lastSeen: firebase.database.ServerValue.TIMESTAMP
+    });
 });
 
 // Initialize the app
