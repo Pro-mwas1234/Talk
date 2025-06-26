@@ -1,12 +1,11 @@
 // Initialize Firebase
 const firebaseConfig = {
-    apiKey: "AIzaSyCSmCGBQ6fzzcdZAp82PvWlelJteYvoXu8",
-    authDomain: "trending-4b135.firebaseapp.com",
-    databaseURL: "https://trending-4b135-default-rtdb.firebaseio.com",
-    projectId: "trending-4b135",
-    storageBucket: "trending-4b135.firebasestorage.app",
-    messagingSenderId: "807429550803",
-    appId: "1:807429550803:web:b076204a85d3f066035a26",
+    apiKey: "AIzaSyDQ3-lEUPs00pULoClMun1gQyiFxUBajW4",
+    authDomain: "chat-d7eb8.firebaseapp.com",
+    databaseURL: "https://chat-d7eb8-default-rtdb.firebaseio.com",
+    projectId: "chat-d7eb8",
+    storageBucket: "chat-d7eb8.firebasestorage.app",
+    messagingSenderId: "963082833966",
     measurementId: "G-60HP09HPSM"
 };
 
