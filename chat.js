@@ -36,7 +36,7 @@ let currentUser = {
 let isTyping = false;
 let lastTypingTime = 0;
 let expiryTimer = null;
-const MESSAGE_EXPIRY_MINUTES = 30;
+const MESSAGE_EXPIRY_MINUTES = 900;
 
 // Voice recording variables
 let mediaRecorder;
