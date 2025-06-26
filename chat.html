@@ -13,32 +13,43 @@
         <header class="app-header">
             <h1>☘️Jaba Baze🍁</h1>
         </header>
+        
         <div class="messages-container" id="messagesContainer">
-            <!-- Messages will appear here -->
+            <!-- Messages will be inserted here by JavaScript -->
         </div>
-        <div id="recordingStatus" style="display:none;">
+        
+        <div id="recordingStatus">
             <span class="pulsing-dot"></span> Recording...
         </div>
+        
         <div id="typingIndicator" class="typing-indicator"></div>
+        
         <div class="input-container">
-            <button id="attachButton" class="icon-button">
+            <!-- File Attachment -->
+            <button id="attachButton" class="icon-button" title="Attach file">
                 <i class="fas fa-paperclip"></i>
             </button>
-            <button id="startRecording" class="icon-button">
+            <input type="file" id="fileInput" accept="image/*" style="display: none;">
+            
+            <!-- Voice Recording -->
+            <button id="startRecording" class="icon-button" title="Record voice message">
                 <i class="fas fa-microphone"></i>
             </button>
-            <button id="stopRecording" class="icon-button" style="display:none; background-color:#ff4444;">
+            <button id="stopRecording" class="icon-button" style="display: none; background-color: #ff4444;" title="Stop recording">
                 <i class="fas fa-stop"></i>
             </button>
+            
+            <!-- Text Input -->
             <input type="text" id="messageInput" placeholder="Type a message" autocomplete="off">
-            <button id="sendButton" class="icon-button" disabled>
+            
+            <!-- Send Button -->
+            <button id="sendButton" class="icon-button" disabled title="Send message">
                 <i class="fas fa-paper-plane"></i>
             </button>
-            <input type="file" id="fileInput" accept="image/*" style="display: none;">
         </div>
     </div>
 
-    <!-- Name Modal -->
+    <!-- Name Entry Modal -->
     <div id="nameModal" class="modal">
         <div class="modal-content">
             <h3>Welcome to CodeWave Chat</h3>
@@ -51,9 +62,8 @@
     <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-storage.js"></script>
     
     <!-- Main App Script -->
     <script src="chat.js"></script>
 </body>
-    </html>
+                </html>
