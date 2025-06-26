@@ -299,6 +299,118 @@ function sendSystemMessage(text) {
         type: 'system'
     });
 }
+// Voice recording variables
+let mediaRecorder;
+let audioChunks = [];
+const startBtn = document.getElementById('startRecording');
+const stopBtn = document.getElementById('stopRecording');
+const recordingStatus = document.getElementById('recordingStatus');
+
+// Initialize Firebase Storage
+const storage = firebase.storage();
+const voiceNotesRef = storage.ref('voiceNotes');
+
+// Start recording
+startBtn.addEventListener('click', async () => {
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    mediaRecorder = new MediaRecorder(stream);
+    audioChunks = [];
+    
+    mediaRecorder.ondataavailable = (e) => {
+      if (e.data.size > 0) audioChunks.push(e.data);
+    };
+    
+    mediaRecorder.onstop = processRecording;
+    mediaRecorder.start(100); // Collect data every 100ms
+    
+    // Update UI
+    startBtn.style.display = 'none';
+    stopBtn.style.display = 'block';
+    recordingStatus.style.display = 'block';
+    
+  } catch (err) {
+    console.error("Recording failed:", err);
+    alert("Microphone access required for voice messages");
+  }
+});
+
+// Stop recording
+stopBtn.addEventListener('click', () => {
+  if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+    mediaRecorder.stop();
+    mediaRecorder.stream.getTracks().forEach(track => track.stop());
+    
+    stopBtn.style.display = 'none';
+    recordingStatus.style.display = 'none';
+  }
+});
+
+// Process and upload recording
+async function processRecording() {
+  const audioBlob = new Blob(audioChunks, { type: 'audio/mpeg' });
+  const audioUrl = URL.createObjectURL(audioBlob);
+  const audio = new Audio(audioUrl);
+  
+  // Get duration
+  const duration = await new Promise(resolve => {
+    audio.onloadedmetadata = () => {
+      resolve(Math.round(audio.duration));
+    };
+  });
+  
+  // Upload to Firebase Storage
+  const fileName = `voice_${currentUser.id}_${Date.now()}.mp3`;
+  const uploadTask = voiceNotesRef.child(fileName).put(audioBlob);
+  
+  uploadTask.on('state_changed',
+    null,
+    (error) => {
+      console.error("Upload failed:", error);
+      sendSystemMessage("Voice message failed to send");
+    },
+    () => {
+      uploadTask.snapshot.ref.getDownloadURL().then((url) => {
+        sendVoiceMessage(url, duration);
+      });
+    }
+  );
+}
+
+// Send voice message to Firebase
+function sendVoiceMessage(url, duration) {
+  messagesRef.push().set({
+    type: 'voice',
+    url: url,
+    duration: duration,
+    senderId: currentUser.id,
+    senderName: currentUser.name,
+    timestamp: Date.now()
+  });
+}
+
+// Display voice messages
+function displayVoiceMessage(message) {
+  const messageElement = document.createElement('div');
+  messageElement.className = `voice-message ${message.senderId === currentUser.id ? 'sent' : 'received'}`;
+  messageElement.innerHTML = `
+    <audio controls>
+      <source src="${message.url}" type="audio/mpeg">
+      Your browser doesn't support audio
+    </audio>
+    <span class="voice-duration">${message.duration}s</span>
+  `;
+  elements.messagesContainer.appendChild(messageElement);
+  scrollToBottom();
+}
+
+// Update your existing displayMessage function
+function displayMessage(message) {
+  if (message.type === 'voice') {
+    displayVoiceMessage(message);
+  } 
+  // ... keep your existing text message handling
+}
 
 // Delete message
 function deleteMessage(messageId) {
