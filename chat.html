@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>🌹Chat 🕸 Hub💮</title>
+    <title>CodeWave Hustle Chat Hub</title>
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link rel="stylesheet" href="chat.css">
@@ -12,11 +12,12 @@
     <div class="chat-container">
         <header class="app-header">
             <h1>☘️Jaba Baze🍁</h1>
+            <button id="darkModeToggle" class="icon-button" title="Toggle dark mode">
+                <i class="fas fa-moon"></i>
+            </button>
         </header>
         
-        <div class="messages-container" id="messagesContainer">
-            <!-- Messages will be inserted here by JavaScript -->
-        </div>
+        <div class="messages-container" id="messagesContainer"></div>
         
         <div id="recordingStatus">
             <span class="pulsing-dot"></span> Recording...
@@ -25,31 +26,23 @@
         <div id="typingIndicator" class="typing-indicator"></div>
         
         <div class="input-container">
-            <!-- File Attachment -->
             <button id="attachButton" class="icon-button" title="Attach file">
                 <i class="fas fa-paperclip"></i>
             </button>
-            <input type="file" id="fileInput" accept="image/*" style="display: none;">
-            
-            <!-- Voice Recording -->
             <button id="startRecording" class="icon-button" title="Record voice message">
                 <i class="fas fa-microphone"></i>
             </button>
-            <button id="stopRecording" class="icon-button" style="display: none; background-color: #ff4444;" title="Stop recording">
+            <button id="stopRecording" class="icon-button" style="display: none;" title="Stop recording">
                 <i class="fas fa-stop"></i>
             </button>
-            
-            <!-- Text Input -->
             <input type="text" id="messageInput" placeholder="Type a message" autocomplete="off">
-            
-            <!-- Send Button -->
             <button id="sendButton" class="icon-button" disabled title="Send message">
                 <i class="fas fa-paper-plane"></i>
             </button>
+            <input type="file" id="fileInput" accept="image/*" style="display: none;">
         </div>
     </div>
 
-    <!-- Name Entry Modal -->
     <div id="nameModal" class="modal">
         <div class="modal-content">
             <h3>Welcome to CodeWave Chat</h3>
@@ -59,11 +52,8 @@
         </div>
     </div>
 
-    <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
-    
-    <!-- Main App Script -->
     <script src="chat.js"></script>
 </body>
-                </html>
+</html>
