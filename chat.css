@@ -1,3 +1,4 @@
+/* Base Styles */
 :root {
   --primary-color: #128C7E;
   --primary-dark: #075E54;
@@ -22,6 +23,7 @@ body {
   height: 100vh;
 }
 
+/* Header */
 .app-header {
   background-color: var(--primary-dark);
   color: white;
@@ -34,6 +36,7 @@ body {
   font-weight: 500;
 }
 
+/* Chat Container */
 .chat-container {
   max-width: 800px;
   margin: 0 auto;
@@ -41,8 +44,10 @@ body {
   display: flex;
   flex-direction: column;
   background-color: #E5DDD5;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
 }
 
+/* Messages Area */
 .messages-container {
   flex: 1;
   overflow-y: auto;
@@ -80,6 +85,7 @@ body {
   color: var(--timestamp-color);
 }
 
+/* Message Content */
 .message-text {
   font-size: 14px;
   line-height: 1.4;
@@ -99,6 +105,7 @@ body {
   display: block;
 }
 
+/* Message Actions */
 .message-actions {
   position: absolute;
   right: 5px;
@@ -119,6 +126,37 @@ body {
   font-size: 12px;
 }
 
+/* Voice Message Styles */
+.voice-message {
+  display: flex;
+  align-items: center;
+  padding: 10px 15px;
+  margin: 8px 0;
+}
+
+.voice-message.sent {
+  background: var(--message-sent);
+  margin-left: auto;
+}
+
+.voice-message.received {
+  background: var(--message-received);
+  margin-right: auto;
+}
+
+.voice-message audio {
+  flex-grow: 1;
+  min-width: 200px;
+  max-width: 100%;
+}
+
+.voice-duration {
+  font-size: 0.8em;
+  color: var(--timestamp-color);
+  margin-left: 10px;
+}
+
+/* Input Area */
 .input-container {
   display: flex;
   padding: 10px;
@@ -136,6 +174,7 @@ body {
   font-size: 14px;
 }
 
+/* Buttons */
 .icon-button {
   background-color: var(--primary-color);
   color: white;
@@ -154,6 +193,17 @@ body {
   cursor: not-allowed;
 }
 
+.primary-btn {
+  background-color: var(--primary-color);
+  color: white;
+  border: none;
+  padding: 10px 15px;
+  border-radius: 4px;
+  cursor: pointer;
+  width: 100%;
+}
+
+/* Indicators */
 .typing-indicator {
   padding: 5px 10px;
   font-size: 12px;
@@ -161,6 +211,32 @@ body {
   text-align: center;
 }
 
+#recordingStatus {
+  padding: 8px 12px;
+  background: #ffebee;
+  border-radius: 4px;
+  font-size: 0.9em;
+  margin: 5px 0;
+  display: none;
+}
+
+.pulsing-dot {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #f44336;
+  animation: pulse 1.5s infinite;
+  margin-right: 8px;
+}
+
+@keyframes pulse {
+  0% { transform: scale(0.95); opacity: 0.7; }
+  50% { transform: scale(1.1); opacity: 1; }
+  100% { transform: scale(0.95); opacity: 0.7; }
+}
+
+/* Modal */
 .modal {
   position: fixed;
   top: 0;
@@ -194,64 +270,31 @@ body {
   border-radius: 4px;
 }
 
-.primary-btn {
-  background-color: var(--primary-color);
-  color: white;
-  border: none;
-  padding: 10px 15px;
-  border-radius: 4px;
-  cursor: pointer;
-  width: 100%;
-}
-/* Voice message styles */
-.voice-message {
-  display: flex;
-  align-items: center;
-  padding: 10px 15px;
-  background: #e3f2fd;
-  border-radius: 18px;
-  margin: 8px 0;
-  max-width: 80%;
+/* System Message Variants */
+.message.system.join {
+  color: #25D366;
+  background-color: #e8f5e9;
 }
 
-.voice-message.sent {
-  background: #dcf8c6;
-  margin-left: auto;
+.message.system.leave {
+  color: #FF3B30;
+  background-color: #ffebee;
 }
 
-.voice-message audio {
-  flex-grow: 1;
-  min-width: 200px;
-  max-width: 100%;
-}
-
-.voice-duration {
-  font-size: 0.8em;
-  color: #607d8b;
-  margin-left: 10px;
-}
-
-/* Recording UI */
-#recordingStatus {
-  padding: 8px 12px;
-  background: #ffebee;
-  border-radius: 4px;
-  font-size: 0.9em;
-  margin: 5px 0;
-}
-
-.pulsing-dot {
-  display: inline-block;
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-  background: #f44336;
-  animation: pulse 1.5s infinite;
-  margin-right: 8px;
-}
-
-@keyframes pulse {
-  0% { transform: scale(0.95); opacity: 0.7; }
-  50% { transform: scale(1.1); opacity: 1; }
-  100% { transform: scale(0.95); opacity: 0.7; }
+/* Responsive Adjustments */
+@media (max-width: 600px) {
+  .chat-container {
+    height: 100vh;
+    max-width: 100%;
+    border-radius: 0;
+  }
+  
+  .voice-message {
+    max-width: 90%;
+  }
+  
+  .icon-button {
+    width: 36px;
+    height: 36px;
+  }
   }
