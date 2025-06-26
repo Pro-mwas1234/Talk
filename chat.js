@@ -25,7 +25,8 @@ const elements = {
     submitNameBtn: document.getElementById('submitNameBtn'),
     startRecording: document.getElementById('startRecording'),
     stopRecording: document.getElementById('stopRecording'),
-    recordingStatus: document.getElementById('recordingStatus')
+    recordingStatus: document.getElementById('recordingStatus'),
+    darkModeToggle: document.getElementById('darkModeToggle')
 };
 
 // App state
@@ -42,6 +43,9 @@ const MESSAGE_EXPIRY_MINUTES = 30;
 let mediaRecorder;
 let audioChunks = [];
 
+// Dark mode state
+let darkMode = localStorage.getItem('darkMode') === 'true';
+
 // Firebase references
 const messagesRef = database.ref('messages');
 const typingRef = database.ref('typing');
@@ -49,6 +53,7 @@ const usersRef = database.ref('users');
 
 // Initialize app
 function init() {
+    updateDarkMode();
     showNameModal();
     setupEventListeners();
     
@@ -57,6 +62,19 @@ function init() {
         elements.startRecording.style.display = 'none';
         console.warn("Voice recording not supported in this browser");
     }
+}
+
+// Dark mode functions
+function toggleDarkMode() {
+    darkMode = !darkMode;
+    localStorage.setItem('darkMode', darkMode);
+    updateDarkMode();
+}
+
+function updateDarkMode() {
+    document.body.classList.toggle('dark-mode', darkMode);
+    elements.darkModeToggle.innerHTML = darkMode ? '<i class="fas fa-sun"></i>' : '<i class="fas fa-moon"></i>';
+    elements.darkModeToggle.title = darkMode ? 'Switch to light mode' : 'Switch to dark mode';
 }
 
 // Show name modal
@@ -72,6 +90,9 @@ function hideNameModal() {
 
 // Setup event listeners
 function setupEventListeners() {
+    // Dark mode toggle
+    elements.darkModeToggle.addEventListener('click', toggleDarkMode);
+    
     // Name submission
     elements.submitNameBtn.addEventListener('click', handleNameSubmit);
     elements.userNameInput.addEventListener('keypress', (e) => {
